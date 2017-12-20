@@ -52,6 +52,7 @@ void write_balance(int fd, int balance)
 	// Make sure nothing went wrong
 	if (bytes_written < 0) {
 		// What does perror do? man 3 perror
+		// prints the string that is passed in to standard error
 		perror("write");
 	}
 }
@@ -90,7 +91,7 @@ int get_random_amount(void)
 	// !!!! IMPLEMENT ME:
 
 	// Return a random number between 0 and 999 inclusive using rand()
-
+	return (rand() % 1000);
 	// ^^^^^^^^^^^^^^^^^^
 }
 
@@ -116,17 +117,24 @@ int main(int argc, char **argv)
 	// message to stderr, and exit with status 1:
 	//
 	// "usage: bankers numprocesses\n"
+	if(argc != 2){
+		fprintf(stderr, "usage: bankers numprocesses\n");
+		exit(1);
+	}
 	
 	// Store the number of processes in this variable:
 
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	int num_processes = atoi(argv[1]);
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
 	//
 	// "bankers: num processes must be greater than 0\n"
-
+	if(num_processes < 1){
+		fprintf(stderr, "bankers: num processes must be greater than 0\n");
+		exit(2);
+	}
 	// ^^^^^^^^^^^^^^^^^^
 
 	// Start with $10K in the bank. Easy peasy.
@@ -135,43 +143,51 @@ int main(int argc, char **argv)
 	close_balance_file(fd);
 
 	// Rabbits, rabbits, rabbits!
-	for (int i = 0; i < num_processes; i++) {
+	int i;
+	for (i = 0; i < num_processes; i++) {
 		if (fork() == 0) {
-			// "Seed" the random number generator with the current
-			// process ID. This makes sure all processes get different
-			// random numbers:
 			srand(getpid());
-
-			// Get a random amount of cash to withdraw. YOLO.
 			int amount = get_random_amount();
-
+			int operation = rand() % 3; // 0 is withdraw, 1 is deposit, 2 is check balance
 			int balance;
-
-			// vvvvvvvvvvvvvvvvvvvvvvvv
-			// !!!! IMPLEMENT ME
-
-			// Open the balance file (feel free to call the helper
-			// functions, above).
-
-			// Read the current balance
-
-			// Try to withdraw money
-			//
-			// Sample messages to print:
-			//
-			// "Withdrew $%d, new balance $%d\n"
-			// "Only have $%d, can't withdraw $%d\n"
-
-			// Close the balance file
-			//^^^^^^^^^^^^^^^^^^^^^^^^^
-
-			// Child process exits
-			exit(0);
+			int fd = open_balance_file(BALANCE_FILE);
+			flock(fd, LOCK_EX);
+			read_balance(fd, &balance);
+			
+			switch(operation) {
+				case 0: // withdraw
+					if(amount <= balance){
+						balance -= amount;
+						write_balance(fd, balance);
+						printf("Withdrew $%d, new balance is $%d\n", amount, balance);
+					} else {
+						printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+					}
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);
+					exit(0);
+					break;
+				case 1: // deposit
+					balance += amount;
+					write_balance(fd, balance);
+					printf("Deposited $%d, new balance is $%d\n", amount, balance);
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);
+					exit(0);
+					break;
+				case 2: // check balance
+					printf("Balance is $%d\n", balance);
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);
+					exit(0);
+					break;
+			}
 		}
 	}
 
 	// Parent process: wait for all forked processes to complete
-	for (int i = 0; i < num_processes; i++) {
+	int j;
+	for (j = 0; j < num_processes; j++) {
 		wait(NULL);
 	}
 
