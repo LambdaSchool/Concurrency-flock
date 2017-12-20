@@ -67,15 +67,21 @@ simulated bank account, that is. Don't get your hopes up.)
    above plan at the same time? Is there more than one way things can go
    wrong?
 
+   1. Multiple processes could read from the balance before another has finished its withdrawal, so when they attempt to withdraw they have an incorrect starting balance. If two withdraws are started at the same time and one depletes the balance, the other may not see that before attempting to withdraw and it ends up withdrawing more money than is in the balance.
+
 2. Study and understand the skeleton code in the `src/` directory.
 
    **Short answer**: what do each of the arguments to `open()` mean?
+
+   2. The first argument is the name of the file to open. O_CREAT means create the file if it doesn't exist, O\_RDWR means open the file for reading and writing. 0644 are the file permissions, 0644 means everyone can read the file, but only the owner can write to it.
 
 3. Take the skeleton code in the `src/` directory and implement the
    pieces marked. Run it.
    
    **Short answer**: What happens? Do things go as planned and look
    sensible? What do you speculate is happening?
+
+   3. Since I'm running it on WSL, it all works, though it shouldn't. If it was running as intended the balance could show up incorrectly, since there is nothing stopping a process from reading or writing the balance while another process is already doing so.
 
 4. Add calls to [`flock()`](https://linux.die.net/man/2/flock) to
    capture and release an exclusive lock on the file before reading and
@@ -86,6 +92,8 @@ simulated bank account, that is. Don't get your hopes up.)
 5. **Short answer**: Why is it working? How has adding locks fixed the
    problems you noted in question 1? How is overall performance of the
    application affected?
+
+   5. The locks block processes from touching the balance until another process has finished. Since the balance can't be read until a process has finished writing, each subsequent process will have the correct balance. The program is slowed down with the locks in place, since the processes aren't reading and writing the balance willy nilly and have to wait for eachother.
 
 
 ## Stretch Goals
