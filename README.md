@@ -67,15 +67,22 @@ simulated bank account, that is. Don't get your hopes up.)
    above plan at the same time? Is there more than one way things can go
    wrong?
 
+   
+one way things can go wrong is if multiple processes read a balance at the same time, and then they withdraw their amount after the sum has been read.
+
+in this way, if 20 processes check the sum and it is 5 dollars, before any of them have pulled money, and they all see that there is enough for them to withdraw 5 dollars, they can each withdraw 5 dollars and the account will be left with a balance of negative 95 dollars, even though they were not supposed to allow for a withdrawal that low.
+
 2. Study and understand the skeleton code in the `src/` directory.
 
    **Short answer**: what do each of the arguments to `open()` mean?
+   the filename means the file name, the number on the end, the last argument, is an octinary number that signifies the capabilities of the open. 6 is for the user to read and write, 4 is for the group to read only, and 6 is for others to read only. the middle argument signifies that it is read write and if there is no file already to create one.
 
 3. Take the skeleton code in the `src/` directory and implement the
    pieces marked. Run it.
    
    **Short answer**: What happens? Do things go as planned and look
    sensible? What do you speculate is happening?
+   no the numbers appear to go up. If i had to guess I would say that they are reading the balance concurrently 
 
 4. Add calls to [`flock()`](https://linux.die.net/man/2/flock) to
    capture and release an exclusive lock on the file before reading and

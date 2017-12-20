@@ -51,7 +51,11 @@ void write_balance(int fd, int balance)
 
 	// Make sure nothing went wrong
 	if (bytes_written < 0) {
-		// What does perror do? man 3 perror
+		// What does perror do? man 3 perror 
+//        "When a system call fails,it usually returns -1 andsets the variable errno to a value describing what went wrong. (These values can be 
+//        found in <errno.h>.) Many library functions do likewise. The function perror() serves to translate this error code into human-readable
+//        form." from manual. it also  "produces a message on the standard error output". basically there is a standard error output, and perror
+//        produces an error in that output. so here it will print something like "Error! write"
 		perror("write");
 	}
 }
@@ -91,6 +95,7 @@ int get_random_amount(void)
 
 	// Return a random number between 0 and 999 inclusive using rand()
 
+    return rand() % 1000;
 	// ^^^^^^^^^^^^^^^^^^
 }
 
@@ -116,11 +121,20 @@ int main(int argc, char **argv)
 	// message to stderr, and exit with status 1:
 	//
 	// "usage: bankers numprocesses\n"
+    
+    if (argc != 2) {
+        perror("usage: bankers numprocesses\n");
+        exit(1);
+    }
 	
 	// Store the number of processes in this variable:
-
+    int num_processes;
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+    sscanf (argv[1],"%d",&num_processes);
+    if (num_processes < 1) {
+        perror("bankers: num processes must be greater than 0\n");
+        exit(2);
+    }
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
@@ -152,19 +166,34 @@ int main(int argc, char **argv)
 
 			// Open the balance file (feel free to call the helper
 			// functions, above).
-
+			fd = open_balance_file(BALANCE_FILE);
+			if (getpid() % 2 == 0) {
+				
+			}
+			flock(fd, LOCK_EX);
 			// Read the current balance
-
+			read_balance(fd, &balance);
+			sleep(1);
+            if (balance > amount) {
+                balance = balance - amount;
+				printf("Withdrew $%d, new balance $%d\n", amount, balance);
+				write_balance(fd, balance);
+            } else {
+				balance = balance + amount;
+				printf("Deposited $%d, new balance $%d\n", balance, amount);
+				write_balance(fd, balance);
+			}
 			// Try to withdraw money
 			//
 			// Sample messages to print:
 			//
 			// "Withdrew $%d, new balance $%d\n"
-			// "Only have $%d, can't withdraw $%d\n"
-
+			// // "Only have $%d, can't withdraw $%d\n"
+				flock(fd, LOCK_UN);
+	           close_balance_file(fd);
 			// Close the balance file
 			//^^^^^^^^^^^^^^^^^^^^^^^^^
-
+			
 			// Child process exits
 			exit(0);
 		}
