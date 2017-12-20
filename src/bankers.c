@@ -105,10 +105,7 @@ int main(int argc, char **argv)
 	
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
-	if (argc != 2) {
-		fprintf(stderr, "usage: bankers numprocesses\n");
-		return 1;
-	}
+
 	// We expect the user to add the number of simulataneous processes
 	// after the command name on the command line.
 	//
@@ -121,6 +118,10 @@ int main(int argc, char **argv)
 	// message to stderr, and exit with status 1:
 	//
 	// "usage: bankers numprocesses\n"
+	if (argc != 2) {
+		fprintf(stderr, "usage: bankers numprocesses\n");
+		return 1;
+	}
 	
 	// Store the number of processes in this variable:
 
