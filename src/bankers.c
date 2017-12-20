@@ -9,7 +9,8 @@
 #include <time.h>
 
 // This is the file where we store the balance
-#define BALANCE_FILE "balance.txt"
+#define BALANCE_FILE "balance.txt" 
+// macro defines a constant
 
 /**
  * Open the file containing the balance
@@ -25,7 +26,7 @@ int open_balance_file(char *filename)
 /**
  * Close the file containing the balance
  */
-int close_balance_file(int fd)
+int close_balance_file(int fd) //(Find out why file descriptor is fd)
 {
 	// Close the file descriptor
 	return close(fd);
@@ -37,6 +38,7 @@ int close_balance_file(int fd)
 void write_balance(int fd, int balance)
 {
 	// Print the balance into a buffer
+	// temp data storage (Find out why needed and how to know when to use)
 	char buffer[1024];
 	int size = sprintf(buffer, "%d", balance);
 
@@ -44,7 +46,9 @@ void write_balance(int fd, int balance)
 	// do that, we first truncate the file to 0 bytes size, then move
 	// the current read/write position to the start of the file.
 	ftruncate(fd, 0);
-	lseek(fd, 0, SEEK_SET);
+	lseek(fd, 0, SEEK_SET); 
+	// system call to change location of read/write pointer of a 
+	// file descriptor
 
 	// Now we write the new balance
 	int bytes_written = write(fd, buffer, size);
@@ -52,6 +56,8 @@ void write_balance(int fd, int balance)
 	// Make sure nothing went wrong
 	if (bytes_written < 0) {
 		// What does perror do? man 3 perror
+		//outputs last system call error to stderr 
+		// "write" is where the error occurs
 		perror("write");
 	}
 }
@@ -59,9 +65,10 @@ void write_balance(int fd, int balance)
 /**
  * Read the balance from a file
  */
+// (Find out why use a pointer - to be able to modify/allow other functions to modify?)
 void read_balance(int fd, int *balance)
 {
-	char buffer[1024];
+	char buffer[1024]; // (possible to make a macro #define?)
 
 	// Seek to the beginning of the file, just in case we're not there
 	// already:
@@ -70,6 +77,7 @@ void read_balance(int fd, int *balance)
 	// Read the balance into a buffer
 	int bytes_read = read(fd, buffer, sizeof buffer);
 	buffer[bytes_read] = '\0';
+	// '\0' NUL - reserved character used to signify the end of a string
 
 	// Error check
 	if (bytes_read < 0) {
@@ -84,13 +92,14 @@ void read_balance(int fd, int *balance)
 /**
  * Returns a random amount between 0 and 999.
  */
-int get_random_amount(void)
+int get_random_amount(void) // (Look at use of void here)
 {
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
-
+	//int random_num = rand() % 1000;
+     return rand() % 1000;
 	// Return a random number between 0 and 999 inclusive using rand()
-
+	//return random_num;
 	// ^^^^^^^^^^^^^^^^^^
 }
 
@@ -114,17 +123,25 @@ int main(int argc, char **argv)
 	// Check to make sure they've added one paramter to the command line
 	// with argc. If they didn't specify anything, print an error
 	// message to stderr, and exit with status 1:
-	//
+	// if (argc == NULL) {
+	   if (argc != 2) {  //"Segmentation fault" 
+		fprintf(stderr, "Did not specify number of processes\n");
+		exit(1);
+	}
 	// "usage: bankers numprocesses\n"
 	
 	// Store the number of processes in this variable:
 
-	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	// How many processes to fork at once******
+	int num_processes = atoi(argv[1]); // 
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
-	//
+	//if (num_processes < 0) {
+	if (num_processes < 1) {	
+		fprintf(stderr, "Number of processes must be greater than zero\n");
+		exit(2);
+	}
 	// "bankers: num processes must be greater than 0\n"
 
 	// ^^^^^^^^^^^^^^^^^^
@@ -145,26 +162,33 @@ int main(int argc, char **argv)
 			// Get a random amount of cash to withdraw. YOLO.
 			int amount = get_random_amount();
 
-			int balance;
+			int balance; //(Is this where *balance points to?)
 
 			// vvvvvvvvvvvvvvvvvvvvvvvv
 			// !!!! IMPLEMENT ME
-
 			// Open the balance file (feel free to call the helper
 			// functions, above).
-
+			//int fd = open_balance_file("balance.txt");
+			int fd = open_balance_file(BALANCE_FILE);
+			// macro defined above
 			// Read the current balance
-
+			read_balance(fd, &balance); //???Pointer
+			sleep(1);
 			// Try to withdraw money
-			//
+			if (balance >= amount) {
+				balance = balance - amount;
+				printf("PID is %d | Withdrew $%d | new balance $%d\n", (int) getpid(), amount, balance);
+				write_balance(fd, balance);
+			} else {
+				printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+			}
 			// Sample messages to print:
-			//
 			// "Withdrew $%d, new balance $%d\n"
 			// "Only have $%d, can't withdraw $%d\n"
 
 			// Close the balance file
 			//^^^^^^^^^^^^^^^^^^^^^^^^^
-
+			close_balance_file(fd);
 			// Child process exits
 			exit(0);
 		}
