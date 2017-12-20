@@ -52,6 +52,8 @@ void write_balance(int fd, int balance)
 	// Make sure nothing went wrong
 	if (bytes_written < 0) {
 		// What does perror do? man 3 perror
+		// perror prints a message to stderr describing the last error that occured
+		// in a call to a system or library function.
 		perror("write");
 	}
 }
@@ -86,12 +88,7 @@ void read_balance(int fd, int *balance)
  */
 int get_random_amount(void)
 {
-	// vvvvvvvvvvvvvvvvvv
-	// !!!! IMPLEMENT ME:
-
-	// Return a random number between 0 and 999 inclusive using rand()
-
-	// ^^^^^^^^^^^^^^^^^^
+	return rand() % 1000;
 }
 
 /**
@@ -100,34 +97,19 @@ int get_random_amount(void)
 int main(int argc, char **argv)
 {
 	// Parse the command line
-	
-	// vvvvvvvvvvvvvvvvvv
-	// !!!! IMPLEMENT ME:
 
-	// We expect the user to add the number of simulataneous processes
-	// after the command name on the command line.
-	//
-	// For example, to fork 12 processes:
-	//
-	//  ./bankers 12
-
-	// Check to make sure they've added one paramter to the command line
-	// with argc. If they didn't specify anything, print an error
-	// message to stderr, and exit with status 1:
-	//
-	// "usage: bankers numprocesses\n"
-	
-	// Store the number of processes in this variable:
+	if(argc < 2) {
+		fprintf(stderr, "usage: bankers numprocesses\n");
+		exit(1);
+	}
 
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	int num_processes = atoi(argv[1]);
 
-	// Make sure the number of processes the user specified is more than
-	// 0 and print an error to stderr if not, then exit with status 2:
-	//
-	// "bankers: num processes must be greater than 0\n"
-
-	// ^^^^^^^^^^^^^^^^^^
+	if(num_processes <= 0) {
+		fprintf(stderr, "bankers: num processes must be greater than 0\n");
+		exit(2);
+	}
 
 	// Start with $10K in the bank. Easy peasy.
 	int fd = open_balance_file(BALANCE_FILE);
@@ -144,28 +126,45 @@ int main(int argc, char **argv)
 
 			// Get a random amount of cash to withdraw. YOLO.
 			int amount = get_random_amount();
+			int processPicker = rand() % 3;
 
 			int balance;
 
-			// vvvvvvvvvvvvvvvvvvvvvvvv
-			// !!!! IMPLEMENT ME
+			fd = open_balance_file(BALANCE_FILE);
 
-			// Open the balance file (feel free to call the helper
-			// functions, above).
+			if(processPicker == 0) {
+				flock(fd, LOCK_EX);
+				read_balance(fd, &balance);
+				// sleep(1);
+				if(balance >= amount) {
+					balance = balance - amount;
+					printf("PID: %d Withdrew $%d, new balance $%d\n", getpid(), amount, balance);
+					write_balance(fd, balance);
+				} else {
+					printf("PID: %d Only have $%d, can't withdraw $%d\n", getpid(), balance, amount);
+				}
+				flock(fd, LOCK_UN);
+			} else if(processPicker == 1) {
+				flock(fd, LOCK_EX);
+				read_balance(fd, &balance);
+				// sleep(1);
+				balance += amount;
+				printf("PID: %d Deposited $%d, new balance $%d\n", getpid(), amount, balance);
+				write_balance(fd, balance);
+				flock(fd, LOCK_UN);
+			} else {
+				// WSL weirdness? All balance checks happen at the same time when using LOCK_SH
+				// with the calls to sleep() in place. Using LOCK_EX or removing the calls to sleep()
+				// stops that.
+				flock(fd, LOCK_SH);
+				read_balance(fd, &balance);
+				// sleep(1);
+				printf("PID: %d Your balance is $%d\n", getpid(), balance);
+				flock(fd, LOCK_UN);
+			}
 
-			// Read the current balance
-
-			// Try to withdraw money
-			//
-			// Sample messages to print:
-			//
-			// "Withdrew $%d, new balance $%d\n"
-			// "Only have $%d, can't withdraw $%d\n"
-
-			// Close the balance file
-			//^^^^^^^^^^^^^^^^^^^^^^^^^
-
-			// Child process exits
+			close_balance_file(fd);
+			
 			exit(0);
 		}
 	}
