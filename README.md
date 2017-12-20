@@ -66,7 +66,7 @@ simulated bank account, that is. Don't get your hopes up.)
 1. **Short answer**: How can things go wrong if two processes attempt the
    above plan at the same time? Is there more than one way things can go
    wrong?
-	 1. There are a couple of ways that things can go wrong. For example,
+	 * There are a couple of ways that things can go wrong. For example,
 	 two process can both read the remaining balance as $500 and then both withdraw
 	 $400. This will result in a remaining balance of -$300. If only one process could
 	 access the bank account at a time, only one process would end up withdrawing the money,
@@ -79,20 +79,20 @@ simulated bank account, that is. Don't get your hopes up.)
 2. Study and understand the skeleton code in the `src/` directory.
 
    **Short answer**: what do each of the arguments to `open()` mean?
-	2. The first argument is the filename to open. O_CREAT means
-  it will create the file if it does not already exist. O_RDWR means 
-	it will open the file for both reading and writing. The third argument, 
-	0644, are the permissions the file is created with. 6 means that the user
-	who owns the file has read and write permissions. The first 4 means the 
-	group that owns the file has read permissions. The second 4 means that 
-	other users have read permissions.
+	 * The first argument is the filename to open. O_CREAT means
+	 it will create the file if it does not already exist. O_RDWR means 
+	 it will open the file for both reading and writing. The third argument,
+	 0644, are the permissions the file is created with. 6 means that the user
+	 who owns the file has read and write permissions. The first 4 means the 
+	 group that owns the file has read permissions. The second 4 means that 
+	 other users have read permissions.
 
 3. Take the skeleton code in the `src/` directory and implement the
    pieces marked. Run it.
    
    **Short answer**: What happens? Do things go as planned and look
    sensible? What do you speculate is happening?
-	 3. There is some weird behavior. For example, one process prints out
+	 * There is some weird behavior. For example, one process prints out
 	 that the balance is $4337. A later process prints out that the balance
 	 is $8154. However, since there is only withdraw functionality, the balance
 	 should only go down. I expect that this is happening because processes are 
@@ -109,7 +109,7 @@ simulated bank account, that is. Don't get your hopes up.)
 5. **Short answer**: Why is it working? How has adding locks fixed the
    problems you noted in question 1? How is overall performance of the
    application affected?
-	 5. Adding locks fixed the problems because only one process can manipulate
+	 * Adding locks fixed the problems because only one process can manipulate
 	 the file at a time. The other process will wait until the process that is 
 	 using the file is finished. Adding locks will slow down the application because
 	 processes will have to spend time waiting.  
