@@ -67,9 +67,16 @@ simulated bank account, that is. Don't get your hopes up.)
    above plan at the same time? Is there more than one way things can go
    wrong?
 
+A: The same amount could be read multiple times then the processes would
+   all write and then the last of those processes would be the only one affecting the
+   file. 
+
 2. Study and understand the skeleton code in the `src/` directory.
 
    **Short answer**: what do each of the arguments to `open()` mean?
+
+A: First the filename. The second, if the file doesn't exist (`O_CREAT`), it'll create it, and if it does (`O_RDWR`) it'll
+   use read and write permissions on it
 
 3. Take the skeleton code in the `src/` directory and implement the
    pieces marked. Run it.
@@ -77,15 +84,22 @@ simulated bank account, that is. Don't get your hopes up.)
    **Short answer**: What happens? Do things go as planned and look
    sensible? What do you speculate is happening?
 
+A: Every process was very out of order or not affecting the file. The last process determined the amount.
+
+
 4. Add calls to [`flock()`](https://linux.die.net/man/2/flock) to
    capture and release an exclusive lock on the file before reading and
    changing the data.
 
    The results of the run should now make sense.
    
+
+
 5. **Short answer**: Why is it working? How has adding locks fixed the
    problems you noted in question 1? How is overall performance of the
    application affected?
+
+A: Now that each process has to wait for permission, it reads and writes in a correct order.
 
 
 ## Stretch Goals
