@@ -10,7 +10,6 @@
 
 // This is the file where we store the balance
 #define BALANCE_FILE "balance.txt"
-
 /**
  * Open the file containing the balance
  */
@@ -88,10 +87,17 @@ int get_random_amount(void)
 {
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
-
+	int randNum = rand() % 999;
+	return randNum;
 	// Return a random number between 0 and 999 inclusive using rand()
 
 	// ^^^^^^^^^^^^^^^^^^
+}
+
+int get_small_rand(void)
+{
+	int randNum = rand() % 3;
+	return randNum;
 }
 
 /**
@@ -99,74 +105,73 @@ int get_random_amount(void)
  */
 int main(int argc, char **argv)
 {
-	// Parse the command line
+	if (argc != 2) {
+		fprintf(stderr, "usage: bankers numprocesses\n");
+        exit(1);
+	}
+	int user_input = atoi(argv[1]);
+	int num_processes = user_input;
+	if (num_processes <= 0) {
+		fprintf(stderr, "bankers: num processes must be greater than 0\n%s is invalid.\n", argv[1]);
+		exit(1);
+	}
+	printf("Creating %d processes...\n", num_processes);
 	
-	// vvvvvvvvvvvvvvvvvv
-	// !!!! IMPLEMENT ME:
-
-	// We expect the user to add the number of simulataneous processes
-	// after the command name on the command line.
-	//
-	// For example, to fork 12 processes:
-	//
-	//  ./bankers 12
-
-	// Check to make sure they've added one paramter to the command line
-	// with argc. If they didn't specify anything, print an error
-	// message to stderr, and exit with status 1:
-	//
-	// "usage: bankers numprocesses\n"
-	
-	// Store the number of processes in this variable:
-
-	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
-
-	// Make sure the number of processes the user specified is more than
-	// 0 and print an error to stderr if not, then exit with status 2:
-	//
-	// "bankers: num processes must be greater than 0\n"
-
-	// ^^^^^^^^^^^^^^^^^^
-
-	// Start with $10K in the bank. Easy peasy.
 	int fd = open_balance_file(BALANCE_FILE);
 	write_balance(fd, 10000);
 	close_balance_file(fd);
 
-	// Rabbits, rabbits, rabbits!
 	for (int i = 0; i < num_processes; i++) {
 		if (fork() == 0) {
-			// "Seed" the random number generator with the current
-			// process ID. This makes sure all processes get different
-			// random numbers:
 			srand(getpid());
 
-			// Get a random amount of cash to withdraw. YOLO.
 			int amount = get_random_amount();
 
 			int balance;
+			fd = open_balance_file(BALANCE_FILE);
+			while (flock(fd, LOCK_EX) == -1);
+			int new_balance, case_num;
+			read_balance(fd, &balance);
+			case_num = get_small_rand(); // determine deposit, withdraw, or check balance
+			switch(case_num) {
+				case 0: // Deposit
+					new_balance = balance + amount;
+					write_balance(fd, new_balance);
+			
+					printf("Deposited $%d, new balance $%d.\n", amount, new_balance);
 
-			// vvvvvvvvvvvvvvvvvvvvvvvv
-			// !!!! IMPLEMENT ME
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);	
 
-			// Open the balance file (feel free to call the helper
-			// functions, above).
+					exit(0);
+				break;
+				case 1: // Withdraw
+					new_balance = balance - amount;
+					if (new_balance < 0) {
+						printf("Only have $%d, can't withdraw $%d.\n", balance, amount);
+						flock(fd, LOCK_UN);
+						close_balance_file(fd);
+						exit(0);
+					}
+			
+					write_balance(fd, new_balance);
+			
+					printf("Withdrew $%d, new balance $%d.\n", amount, new_balance);
 
-			// Read the current balance
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);	
 
-			// Try to withdraw money
-			//
-			// Sample messages to print:
-			//
-			// "Withdrew $%d, new balance $%d\n"
-			// "Only have $%d, can't withdraw $%d\n"
+					exit(0);
+				break;
+				case 2: // Check balance
+					printf("Balance is $%d\n", balance);
 
-			// Close the balance file
-			//^^^^^^^^^^^^^^^^^^^^^^^^^
+					flock(fd, LOCK_UN);
+					close_balance_file(fd);	
 
-			// Child process exits
-			exit(0);
+					exit(0);
+				break;
+			}
 		}
 	}
 
