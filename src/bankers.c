@@ -170,9 +170,7 @@ int main(int argc, char **argv)
 			// Read the current balance
 			read_balance(fd, &balance);
 
-			// write_balance(fd, balance);
-			// scanf("%d", balance);
-			// printf("Balance is $%d", balance);
+
 			// Try to withdraw money
 			if (balance >= amount) {
 				balance -= amount;
