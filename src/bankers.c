@@ -92,6 +92,15 @@ int get_random_amount(void)
 	// Return a random number between 0 and 999 inclusive using rand()
 
 	// ^^^^^^^^^^^^^^^^^^
+	// srand(time(NULL));
+	int randN = -1;
+	while(randN < 0) {
+		int t = rand();
+		if (t < 10000) {
+			randN = t;
+		}
+	}
+	return randN;
 }
 
 /**
@@ -100,7 +109,7 @@ int get_random_amount(void)
 int main(int argc, char **argv)
 {
 	// Parse the command line
-	
+
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
 
@@ -116,17 +125,31 @@ int main(int argc, char **argv)
 	// message to stderr, and exit with status 1:
 	//
 	// "usage: bankers numprocesses\n"
-	
+
+	if (argc == 1) {
+		printf("Error: User did not supply int {count} of bankers.\n");
+		printf("       usage: bankers {numprocesses}\n");
+		exit(1);
+	}
+
+	if (argc > 2) {
+		// TODO: allow for this...
+	}
+
 	// Store the number of processes in this variable:
 
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	int num_processes = atoi(argv[1]);
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
 	//
 	// "bankers: num processes must be greater than 0\n"
-
+	if (num_processes <= 0) {
+		printf("Error:\n");
+		printf("bankers: num processes must be greater than 0\n");
+		exit(2);
+	}
 	// ^^^^^^^^^^^^^^^^^^
 
 	// Start with $10K in the bank. Easy peasy.
@@ -147,24 +170,50 @@ int main(int argc, char **argv)
 
 			int balance;
 
+			int dep_or_with = get_random_amount();
+
 			// vvvvvvvvvvvvvvvvvvvvvvvv
 			// !!!! IMPLEMENT ME
-
 			// Open the balance file (feel free to call the helper
 			// functions, above).
-
+			int bf = open_balance_file(BALANCE_FILE);
+			// Lock file
+			if (dep_or_with > 6666) {
+				// Reading only
+				flock(bf, LOCK_SH);
+			} else {
+				// Writing
+				flock(bf, LOCK_EX);
+			}
 			// Read the current balance
-
+			read_balance(bf, &balance);
 			// Try to withdraw money
 			//
 			// Sample messages to print:
 			//
 			// "Withdrew $%d, new balance $%d\n"
 			// "Only have $%d, can't withdraw $%d\n"
-
+			if (dep_or_with > 6666) {
+				printf("Balance is %d\n", balance);
+			} else if (balance < amount && dep_or_with <= 6666 && dep_or_with >= 3333) {
+				// Withdraw with not enough in balanace
+				printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+			} else if(dep_or_with <= 6666 && dep_or_with >= 3333) {
+				// withdraw
+				balance -= amount;
+				write_balance(bf, balance);
+				printf("Withdrew $%d, new balance $%d\n", amount, balance);
+			} else {
+				// deposit
+				balance += amount;
+				write_balance(bf, balance);
+				printf("Deposited $%d, new balanace $%d\n", amount, balance);
+			}
+			// Unlock file
+			flock(bf, F_UNLCK);
 			// Close the balance file
 			//^^^^^^^^^^^^^^^^^^^^^^^^^
-
+			close_balance_file(bf);
 			// Child process exits
 			exit(0);
 		}
