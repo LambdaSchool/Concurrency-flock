@@ -88,7 +88,7 @@ int get_random_amount(void)
 {
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
-
+	return rand() % 1000;
 	// Return a random number between 0 and 999 inclusive using rand()
 
 	// ^^^^^^^^^^^^^^^^^^
@@ -120,11 +120,14 @@ int main(int argc, char **argv)
 	// Store the number of processes in this variable:
 
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	int num_processes = atoi(argv[1]); 
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
-	//
+	if (num_processes == 0) {
+		fprintf(stderr, "Enter a number greater then 0");
+		exit(2);
+	}
 	// "bankers: num processes must be greater than 0\n"
 
 	// ^^^^^^^^^^^^^^^^^^
@@ -133,6 +136,8 @@ int main(int argc, char **argv)
 	int fd = open_balance_file(BALANCE_FILE);
 	write_balance(fd, 10000);
 	close_balance_file(fd);
+
+
 
 	// Rabbits, rabbits, rabbits!
 	for (int i = 0; i < num_processes; i++) {
@@ -152,16 +157,43 @@ int main(int argc, char **argv)
 
 			// Open the balance file (feel free to call the helper
 			// functions, above).
+			int fd = open_balance_file(BALANCE_FILE);
 
+
+			flock(fd, LOCK_EX);
 			// Read the current balance
+			read_balance(fd, &balance);
+			printf("---> Total Balance Before Action %d <---\n\n", balance);
+			
 
-			// Try to withdraw money
-			//
+			if ((balance - amount) < 0) {
+				printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+			} else {
+
+				if (i % 3 == 0) { // <----- I made it very simple so every 3rd client is depositing 
+					// Deposit
+					balance = balance + amount;
+					printf("---> Client PID %d Deposited $%d, new balance $%d\n", (int) getpid(), amount, balance);
+					write_balance(fd, balance);
+					close_balance_file(fd);
+				} else {
+					// Try to withdraw money
+					balance = balance - amount;
+					printf("---> Client PID %d Withdrew $%d, new balance $%d\n", (int) getpid(), amount, balance);
+					write_balance(fd, balance);
+					close_balance_file(fd);
+				}
+
+
+			}
+
+			flock(fd, LOCK_EX); // <----- I didn't really get how does this work
+
+
 			// Sample messages to print:
-			//
+			
 			// "Withdrew $%d, new balance $%d\n"
 			// "Only have $%d, can't withdraw $%d\n"
-
 			// Close the balance file
 			//^^^^^^^^^^^^^^^^^^^^^^^^^
 
