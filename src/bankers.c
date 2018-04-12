@@ -19,7 +19,7 @@ int open_balance_file(char *filename)
 	// This line returns an open "file descriptor" (a number, how Unix
 	// tracks open files) for both reading and writing. If the file does
 	// not exist, it is created with 0644 permissions.
-	return open(filename, O_CREAT|O_RDWR, 0644);
+	return open(filename, O_CREAT | O_RDWR, 0644);
 }
 
 /**
@@ -50,7 +50,8 @@ void write_balance(int fd, int balance)
 	int bytes_written = write(fd, buffer, size);
 
 	// Make sure nothing went wrong
-	if (bytes_written < 0) {
+	if (bytes_written < 0)
+	{
 		// What does perror do? man 3 perror
 		perror("write");
 	}
@@ -72,7 +73,8 @@ void read_balance(int fd, int *balance)
 	buffer[bytes_read] = '\0';
 
 	// Error check
-	if (bytes_read < 0) {
+	if (bytes_read < 0)
+	{
 		perror("read");
 		return;
 	}
@@ -86,12 +88,7 @@ void read_balance(int fd, int *balance)
  */
 int get_random_amount(void)
 {
-	// vvvvvvvvvvvvvvvvvv
-	// !!!! IMPLEMENT ME:
-
-	// Return a random number between 0 and 999 inclusive using rand()
-
-	// ^^^^^^^^^^^^^^^^^^
+	return rand() % 1000;
 }
 
 /**
@@ -100,7 +97,7 @@ int get_random_amount(void)
 int main(int argc, char **argv)
 {
 	// Parse the command line
-	
+
 	// vvvvvvvvvvvvvvvvvv
 	// !!!! IMPLEMENT ME:
 
@@ -116,17 +113,26 @@ int main(int argc, char **argv)
 	// message to stderr, and exit with status 1:
 	//
 	// "usage: bankers numprocesses\n"
-	
+	if (argc < 2)
+	{
+		printf("usage: bankers numprocesses\n");
+		exit(1);
+	}
+
 	// Store the number of processes in this variable:
 	// How many processes to fork at once
-	int num_processes = IMPLEMENT ME
+	int num_processes = atoi(argv[1]);
 
 	// Make sure the number of processes the user specified is more than
 	// 0 and print an error to stderr if not, then exit with status 2:
 	//
 	// "bankers: num processes must be greater than 0\n"
 
-	// ^^^^^^^^^^^^^^^^^^
+	if (num_processes <= 0)
+	{
+		fprintf(stderr, "bankers: num processes must be greater than 0\n");
+		exit(2);
+	}
 
 	// Start with $10K in the bank. Easy peasy.
 	int fd = open_balance_file(BALANCE_FILE);
@@ -134,8 +140,10 @@ int main(int argc, char **argv)
 	close_balance_file(fd);
 
 	// Rabbits, rabbits, rabbits!
-	for (int i = 0; i < num_processes; i++) {
-		if (fork() == 0) {
+	for (int i = 0; i < num_processes; i++)
+	{
+		if (fork() == 0)
+		{
 			// "Seed" the random number generator with the current
 			// process ID. This makes sure all processes get different
 			// random numbers:
@@ -151,17 +159,56 @@ int main(int argc, char **argv)
 
 			// Open the balance file (feel free to call the helper
 			// functions, above).
+			int fdd = open_balance_file(BALANCE_FILE);
 
-			// Read the current balance
+			if (amount % 3 == 0)
+			{
+				read_balance(fdd, &balance);
 
-			// Try to withdraw money
-			//
-			// Sample messages to print:
-			//
-			// "Withdrew $%d, new balance $%d\n"
-			// "Only have $%d, can't withdraw $%d\n"
+				printf("Checking balance $%d\n", balance);
+			}
 
-			// Close the balance file
+			else if (flock(fdd, LOCK_EX) >= 0) /* if flock does not equal -1 (error) */
+			{
+
+				// Read the current balance
+				read_balance(fdd, &balance);
+
+				// Try to withdraw money
+				//
+				// Sample messages to print:
+				//
+				// "Withdrew $%d, new balance $%d\n"
+				// "Only have $%d, can't withdraw $%d\n"
+				if (amount % 2 == 0)
+				{
+					if (balance - amount >= 0)
+					{
+						write_balance(fdd, balance - amount);
+						read_balance(fdd, &balance);
+
+						printf("Withdrew $%d, new balance $%d\n", amount, balance);
+					}
+
+					else
+					{
+						printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+					}
+				}
+
+				else
+				{
+					write_balance(fdd, balance + amount);
+					read_balance(fdd, &balance);
+
+					printf("Deposited $%d, new balance $%d\n", amount, balance);
+				}
+
+				// Close the balance file
+				close_balance_file(fdd);
+
+				flock(fdd, LOCK_UN);
+			}
 			//^^^^^^^^^^^^^^^^^^^^^^^^^
 
 			// Child process exits
@@ -170,7 +217,8 @@ int main(int argc, char **argv)
 	}
 
 	// Parent process: wait for all forked processes to complete
-	for (int i = 0; i < num_processes; i++) {
+	for (int i = 0; i < num_processes; i++)
+	{
 		wait(NULL);
 	}
 
