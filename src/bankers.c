@@ -161,7 +161,14 @@ int main(int argc, char **argv)
 			// functions, above).
 			int fdd = open_balance_file(BALANCE_FILE);
 
-			if (flock(fdd, LOCK_EX) >= 0) /* if flock does not equal -1 (error) */
+			if (amount % 3 == 0)
+			{
+				read_balance(fdd, &balance);
+
+				printf("Checking balance $%d\n", balance);
+			}
+
+			else if (flock(fdd, LOCK_EX) >= 0) /* if flock does not equal -1 (error) */
 			{
 
 				// Read the current balance
@@ -173,17 +180,28 @@ int main(int argc, char **argv)
 				//
 				// "Withdrew $%d, new balance $%d\n"
 				// "Only have $%d, can't withdraw $%d\n"
-				if (balance - amount >= 0)
+				if (amount % 2 == 0)
 				{
-					write_balance(fdd, balance - amount);
-					read_balance(fdd, &balance);
+					if (balance - amount >= 0)
+					{
+						write_balance(fdd, balance - amount);
+						read_balance(fdd, &balance);
 
-					printf("Withdrew $%d, new balance $%d\n", amount, balance);
+						printf("Withdrew $%d, new balance $%d\n", amount, balance);
+					}
+
+					else
+					{
+						printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+					}
 				}
 
 				else
 				{
-					printf("Only have $%d, can't withdraw $%d\n", balance, amount);
+					write_balance(fdd, balance + amount);
+					read_balance(fdd, &balance);
+
+					printf("Deposited $%d, new balance $%d\n", amount, balance);
 				}
 
 				// Close the balance file
